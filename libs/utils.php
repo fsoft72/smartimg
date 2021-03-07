@@ -6,14 +6,29 @@
  */
 
 /**
+ * Util function to create an error message.
+ * It automatically supports localization if available
+ *
+ * @param string $message The message to return
+ */
+function _error($message) {
+	return json_encode(
+		array(
+			'success' => false,
+			'message' => esc_html__($message, 'smartimg'),
+		)
+	);
+}
+
+/**
  * Util function returns an array value, if not defined then returns default instead.
  *
  * @param array  $arr Any array.
  * @param string $key Any index from that array.
  * @param mixed  $default Whatever you want.
  */
-function _val( $arr, $key, $default = '' ) {
-	return isset( $arr[ $key ] ) ? $arr[ $key ] : $default;
+function _val($arr, $key, $default = '') {
+	return isset($arr[$key]) ? $arr[$key] : $default;
 }
 
 /**
@@ -25,38 +40,38 @@ function _val( $arr, $key, $default = '' ) {
  * @param bool   $refresh_cache Optional. True to flush cache prior to fetching path. Default true.
  * @return string The full path to the image.
  */
-function smartimg_attachment_path( $meta, $id, $file = '', $refresh_cache = true ) {
+function smartimg_attachment_path($meta, $id, $file = '', $refresh_cache = true) {
 	// Retrieve the location of the WordPress upload folder.
-	$upload_dir  = wp_upload_dir( null, false, $refresh_cache );
-	$upload_path = trailingslashit( $upload_dir['basedir'] );
-	if ( is_array( $meta ) && ! empty( $meta['file'] ) ) {
+	$upload_dir  = wp_upload_dir(null, false, $refresh_cache);
+	$upload_path = trailingslashit($upload_dir['basedir']);
+	if (is_array($meta) && !empty($meta['file'])) {
 		$file_path = $meta['file'];
-		if ( strpos( $file_path, 's3' ) === 0 ) {
+		if (strpos($file_path, 's3') === 0) {
 			return '';
 		}
-		if ( is_file( $file_path ) ) {
+		if (is_file($file_path)) {
 			return $file_path;
 		}
 		$file_path = $upload_path . $file_path;
-		if ( is_file( $file_path ) ) {
+		if (is_file($file_path)) {
 			return $file_path;
 		}
-		$upload_path = trailingslashit( WP_CONTENT_DIR ) . 'uploads/';
+		$upload_path = trailingslashit(WP_CONTENT_DIR) . 'uploads/';
 		$file_path   = $upload_path . $meta['file'];
-		if ( is_file( $file_path ) ) {
+		if (is_file($file_path)) {
 			return $file_path;
 		}
 	}
-	if ( ! $file ) {
-		$file = get_post_meta( $id, '_wp_attached_file', true );
+	if (!$file) {
+		$file = get_post_meta($id, '_wp_attached_file', true);
 	}
-	$file_path          = ( 0 !== strpos( $file, '/' ) && ! preg_match( '|^.:\\\|', $file ) ? $upload_path . $file : $file );
-	$filtered_file_path = apply_filters( 'get_attached_file', $file_path, $id );
-	if ( strpos( $filtered_file_path, 's3' ) === false && is_file( $filtered_file_path ) ) {
-		return str_replace( '//_imsgalleries/', '/_imsgalleries/', $filtered_file_path );
+	$file_path          = (0 !== strpos($file, '/') && !preg_match('|^.:\\\|', $file) ? $upload_path . $file : $file);
+	$filtered_file_path = apply_filters('get_attached_file', $file_path, $id);
+	if (strpos($filtered_file_path, 's3') === false && is_file($filtered_file_path)) {
+		return str_replace('//_imsgalleries/', '/_imsgalleries/', $filtered_file_path);
 	}
-	if ( strpos( $file_path, 's3' ) === false && is_file( $file_path ) ) {
-		return str_replace( '//_imsgalleries/', '/_imsgalleries/', $file_path );
+	if (strpos($file_path, 's3') === false && is_file($file_path)) {
+		return str_replace('//_imsgalleries/', '/_imsgalleries/', $file_path);
 	}
 	return '';
 }
@@ -67,21 +82,21 @@ function smartimg_attachment_path( $meta, $id, $file = '', $refresh_cache = true
  * @param string $path The name of the file.
  * @return string|bool The mime type based on the extension or false.
  */
-function smartimg_quick_mimetype( $path ) {
-	$pathextension = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
-	switch ( $pathextension ) {
-		case 'jpg':
-		case 'jpeg':
-		case 'jpe':
-			return 'image/jpeg';
-		case 'png':
-			return 'image/png';
-		case 'gif':
-			return 'image/gif';
-		case 'pdf':
-			return 'application/pdf';
-		default:
-			return false;
+function smartimg_quick_mimetype($path) {
+	$pathextension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+	switch ($pathextension) {
+	case 'jpg':
+	case 'jpeg':
+	case 'jpe':
+		return 'image/jpeg';
+	case 'png':
+		return 'image/png';
+	case 'gif':
+		return 'image/gif';
+	case 'pdf':
+		return 'application/pdf';
+	default:
+		return false;
 	}
 }
 
@@ -92,10 +107,10 @@ function smartimg_quick_mimetype( $path ) {
  * @param string $type Mime type of the file.
  * @return int|bool The orientation value or false.
  */
-function smartimg_get_orientation( $file, $type ) {
-	if ( function_exists( 'exif_read_data' ) && 'image/jpeg' === $type ) {
-		$exif = @exif_read_data( $file );
-		if ( is_array( $exif ) && array_key_exists( 'Orientation', $exif ) ) {
+function smartimg_get_orientation($file, $type) {
+	if (function_exists('exif_read_data') && 'image/jpeg' === $type) {
+		$exif = @exif_read_data($file);
+		if (is_array($exif) && array_key_exists('Orientation', $exif)) {
 			return (int) $exif['Orientation'];
 		}
 	}
@@ -108,30 +123,30 @@ function smartimg_get_orientation( $file, $type ) {
  * @param string $filename The name of the image file.
  * @return bool True if transparency is found.
  */
-function smartimg_has_alpha( $filename ) {
-	if ( ! is_file( $filename ) ) {
+function smartimg_has_alpha($filename) {
+	if (!is_file($filename)) {
 		return false;
 	}
-	if ( false !== strpos( $filename, '../' ) ) {
+	if (false !== strpos($filename, '../')) {
 		return false;
 	}
-	$file_contents = file_get_contents( $filename );
+	$file_contents = file_get_contents($filename);
 	// Determine what color type is stored in the file.
-	$color_type = ord( substr( $file_contents, 25, 1 ) );
+	$color_type = ord(substr($file_contents, 25, 1));
 	// If we do not have GD and the PNG color type is RGB alpha or Grayscale alpha.
-	if ( ! _gd_supported() && ( 4 === $color_type || 6 === $color_type ) ) {
+	if (!_gd_supported() && (4 === $color_type || 6 === $color_type)) {
 		return true;
-	} elseif ( _gd_supported() ) {
-		$image = imagecreatefrompng( $filename );
-		if ( imagecolortransparent( $image ) >= 0 ) {
+	} elseif (_gd_supported()) {
+		$image = imagecreatefrompng($filename);
+		if (imagecolortransparent($image) >= 0) {
 			return true;
 		}
-		list( $width, $height ) = getimagesize( $filename );
-		for ( $y = 0; $y < $height; $y++ ) {
-			for ( $x = 0; $x < $width; $x++ ) {
-				$color = imagecolorat( $image, $x, $y );
-				$rgb   = imagecolorsforindex( $image, $color );
-				if ( $rgb['alpha'] > 0 ) {
+		list($width, $height) = getimagesize($filename);
+		for ($y = 0; $y < $height; $y++) {
+			for ($x = 0; $x < $width; $x++) {
+				$color = imagecolorat($image, $x, $y);
+				$rgb   = imagecolorsforindex($image, $color);
+				if ($rgb['alpha'] > 0) {
 					return true;
 				}
 			}
@@ -146,10 +161,10 @@ function smartimg_has_alpha( $filename ) {
  * @return bool True if full GD support is detected.
  */
 function _gd_supported() {
-	if ( function_exists( 'gd_info' ) ) {
+	if (function_exists('gd_info')) {
 		$gd_support = gd_info();
-		if ( is_iterable( $gd_support ) ) {
-			if ( ( ! empty( $gd_support['JPEG Support'] ) || ! empty( $gd_support['JPG Support'] ) ) && ! empty( $gd_support['PNG Support'] ) ) {
+		if (is_iterable($gd_support)) {
+			if ((!empty($gd_support['JPEG Support']) || !empty($gd_support['JPG Support'])) && !empty($gd_support['PNG Support'])) {
 				return true;
 			}
 		}
@@ -164,12 +179,12 @@ function _gd_supported() {
  * @param string $title A title/header for the message.
  * @param bool   $die Default false. Whether we should die.
  */
-function _fatal( $message, $title = '', $die = false ) {
-	echo ( "<div style='margin:5px 0px 5px 0px;padding:10px;border: solid 1px red; background-color: #ff6666; color: black;'>"
-		. ( $title ? "<h4 style='font-weight: bold; margin: 3px 0px 8px 0px;'>" . $title . '</h4>' : '' )
+function _fatal($message, $title = '', $die = false) {
+	echo ("<div style='margin:5px 0px 5px 0px;padding:10px;border: solid 1px red; background-color: #ff6666; color: black;'>"
+		. ($title ? "<h4 style='font-weight: bold; margin: 3px 0px 8px 0px;'>" . $title . '</h4>' : '')
 		. $message
-		. '</div>' );
-	if ( $die ) {
+		. '</div>');
+	if ($die) {
 		die();
 	}
 }
@@ -180,20 +195,22 @@ function _fatal( $message, $title = '', $die = false ) {
  * @param int $id The attachment ID of the image to process.
  * @return array The success status (bool) and a message to display.
  */
-function smartimg_resize_from_id( $id = 0 ) {
+function smartimg_resize_from_id($id = 0) {
 
 	$id = (int) $id;
 
-	if ( ! $id ) return;
+	if (!$id) {
+		return;
+	}
 
-	$meta = wp_get_attachment_metadata( $id );
+	$meta = wp_get_attachment_metadata($id);
 
-	if ( $meta && is_array( $meta ) ) {
+	if ($meta && is_array($meta)) {
 		$update_meta = false;
 		// If "noresize" is included in the filename then we will bypass smartimg scaling.
-		if ( ! empty( $meta['file'] ) && false !== strpos( $meta['file'], 'noresize' ) ) {
+		if (!empty($meta['file']) && false !== strpos($meta['file'], 'noresize')) {
 			/* translators: %s: File-name of the image */
-			$msg = sprintf( esc_html__( 'SKIPPED: %s (noresize)', 'smartimg' ), $meta['file'] );
+			$msg = sprintf(esc_html__('SKIPPED: %s (noresize)', 'smartimg'), $meta['file']);
 			return array(
 				'success' => false,
 				'message' => $msg,
@@ -201,16 +218,16 @@ function smartimg_resize_from_id( $id = 0 ) {
 		}
 
 		// Let folks filter the allowed mime-types for resizing.
-		$allowed_types = apply_filters( 'smartimg_allowed_mimes', array( 'image/png', 'image/gif', 'image/jpeg' ), $meta['file'] );
-		if ( is_string( $allowed_types ) ) {
-			$allowed_types = array( $allowed_types );
-		} elseif ( ! is_array( $allowed_types ) ) {
+		$allowed_types = apply_filters('smartimg_allowed_mimes', array('image/png', 'image/gif', 'image/jpeg'), $meta['file']);
+		if (is_string($allowed_types)) {
+			$allowed_types = array($allowed_types);
+		} elseif (!is_array($allowed_types)) {
 			$allowed_types = array();
 		}
-		$ftype = smartimg_quick_mimetype( $meta['file'] );
-		if ( ! in_array( $ftype, $allowed_types, true ) ) {
+		$ftype = smartimg_quick_mimetype($meta['file']);
+		if (!in_array($ftype, $allowed_types, true)) {
 			/* translators: %s: File type of the image */
-			$msg = sprintf( esc_html__( '%1$s does not have an allowed file type (%2$s)', 'smartimg' ), $meta['file'], $ftype );
+			$msg = sprintf(esc_html__('%1$s does not have an allowed file type (%2$s)', 'smartimg'), $meta['file'], $ftype);
 			return array(
 				'success' => false,
 				'message' => $msg,
@@ -218,66 +235,65 @@ function smartimg_resize_from_id( $id = 0 ) {
 		}
 
 		$uploads = wp_upload_dir();
-		$oldpath = smartimg_attachment_path( $meta, $id, '', false );
-		if ( empty( $oldpath ) || ! is_writable( $oldpath ) ) {
+		$oldpath = smartimg_attachment_path($meta, $id, '', false);
+		if (empty($oldpath) || !is_writable($oldpath)) {
 			/* translators: %s: File-name of the image */
-			$msg = sprintf( esc_html__( '%s is not writable', 'smartimg' ), $meta['file'] );
+			$msg = sprintf(esc_html__('%s is not writable', 'smartimg'), $meta['file']);
 			return array(
 				'success' => false,
 				'message' => $msg,
 			);
 		}
 
-		if ( apply_filters( 'smartimg_skip_image', false, $oldpath ) ) {
+		if (apply_filters('smartimg_skip_image', false, $oldpath)) {
 			/* translators: %s: File-name of the image */
-			$msg = sprintf( esc_html__( 'SKIPPED: %s (by user exclusion)', 'smartimg' ), $meta['file'] );
+			$msg = sprintf(esc_html__('SKIPPED: %s (by user exclusion)', 'smartimg'), $meta['file']);
 			return array(
 				'success' => false,
 				'message' => $msg,
 			);
 		}
 
-		$maxw = smartimg_get_option( 'smartimg_max_width', SMARTIMG_DEFAULT_MAX_WIDTH );
-		$maxh = smartimg_get_option( 'smartimg_max_height', SMARTIMG_DEFAULT_MAX_HEIGHT );
-		$always_jpg = smartimg_get_option ( 'smartimg_always_resize_jpg', false );
+		$maxw       = smartimg_get_option('smartimg_max_width', SMARTIMG_DEFAULT_MAX_WIDTH);
+		$maxh       = smartimg_get_option('smartimg_max_height', SMARTIMG_DEFAULT_MAX_HEIGHT);
+		$always_jpg = smartimg_get_option('smartimg_always_resize_jpg', false);
 
 		// method one - slow but accurate, get file size from file itself.
-		list( $oldw, $oldh ) = getimagesize( $oldpath );
+		list($oldw, $oldh) = getimagesize($oldpath);
 		// method two - get file size from meta, fast but resize will fail if meta is out of sync.
-		if ( ! $oldw || ! $oldh ) {
+		if (!$oldw || !$oldh) {
 			$oldw = $meta['width'];
 			$oldh = $meta['height'];
 		}
 
-		if ( ( $oldw > $maxw && $maxw > 0 ) || ( $oldh > $maxh && $maxh > 0 ) || $always_jpg ) {
-			$quality = smartimg_get_option( 'smartimg_quality', SMARTIMG_DEFAULT_QUALITY );
+		if (($oldw > $maxw && $maxw > 0) || ($oldh > $maxh && $maxh > 0) || $always_jpg) {
+			$quality = smartimg_get_option('smartimg_quality', SMARTIMG_DEFAULT_QUALITY);
 
 			$neww = -1;
 			$newh = -1;
 
-			if ( $maxw > 0 && $maxh > 0 && $oldw >= $maxw && $oldh >= $maxh && ( $oldh > $maxh || $oldw > $maxw ) && apply_filters( 'smartimg_crop_image', false ) ) {
+			if ($maxw > 0 && $maxh > 0 && $oldw >= $maxw && $oldh >= $maxh && ($oldh > $maxh || $oldw > $maxw) && apply_filters('smartimg_crop_image', false)) {
 				$neww = $maxw;
 				$newh = $maxh;
 			} else {
-				list( $neww, $newh ) = wp_constrain_dimensions( $oldw, $oldh, $maxw, $maxh );
+				list($neww, $newh) = wp_constrain_dimensions($oldw, $oldh, $maxw, $maxh);
 			}
 
 			// We use the old sizes
-			if ( $neww == -1 && $always_jpg )
-			{
+			if ($neww == -1 && $always_jpg) {
 				$neww = $oldw;
 				$newh = $oldh;
 			}
 
-			$resizeresult = smartimg_image_resize( $oldpath, $neww, $newh, apply_filters( 'smartimg_crop_image', false ), null, null, $quality );
+			$resizeresult = smartimg_image_resize($oldpath, $neww, $newh, apply_filters('smartimg_crop_image', false), null, null, $quality);
 
-			if ( $resizeresult && ! is_wp_error( $resizeresult ) ) {
+			if ($resizeresult && !is_wp_error($resizeresult)) {
 				$newpath = $resizeresult;
 
-				if ( $newpath !== $oldpath && is_file( $newpath ) && filesize( $newpath ) < filesize( $oldpath ) ) {
+				if ($newpath !== $oldpath && is_file($newpath) && filesize($newpath) < filesize($oldpath)) {
 					// we saved some file space. remove original and replace with resized image.
-					unlink( $oldpath );
-					rename( $newpath, $oldpath );
+					unlink($oldpath);
+					rename($newpath, $oldpath);
 					$meta['width']  = $neww;
 					$meta['height'] = $newh;
 
@@ -287,41 +303,41 @@ function smartimg_resize_from_id( $id = 0 ) {
 						'success' => true,
 						'id'      => $id,
 						/* translators: 1: File-name of the image */
-						'message' => sprintf( esc_html__( 'OK: %1$s resized to %2$s x %3$s', 'smartimg' ), $meta['file'], $neww . 'w', $newh . 'h' ),
+						'message' => sprintf(esc_html__('OK: %1$s resized to %2$s x %3$s', 'smartimg'), $meta['file'], $neww . 'w', $newh . 'h'),
 					);
-				} elseif ( $newpath !== $oldpath ) {
+				} elseif ($newpath !== $oldpath) {
 					// the resized image is actually bigger in filesize (most likely due to jpg quality).
 					// keep the old one and just get rid of the resized image.
-					if ( is_file( $newpath ) ) {
-						unlink( $newpath );
+					if (is_file($newpath)) {
+						unlink($newpath);
 					}
 					$results = array(
 						'success' => false,
 						'id'      => $id,
 						/* translators: 1: File-name of the image 2: the error message, translated elsewhere */
-						'message' => sprintf( esc_html__( 'ERROR: %1$s (%2$s)', 'smartimg' ), $meta['file'], esc_html__( 'File size of resized image was larger than the original', 'smartimg' ) ),
+						'message' => sprintf(esc_html__('ERROR: %1$s (%2$s)', 'smartimg'), $meta['file'], esc_html__('File size of resized image was larger than the original', 'smartimg')),
 					);
 				} else {
 					$results = array(
 						'success' => false,
 						'id'      => $id,
 						/* translators: 1: File-name of the image 2: the error message, translated elsewhere */
-						'message' => sprintf( esc_html__( 'ERROR: %1$s (%2$s)', 'smartimg' ), $meta['file'], esc_html__( 'Unknown error, resizing function returned the same filename', 'smartimg' ) ),
+						'message' => sprintf(esc_html__('ERROR: %1$s (%2$s)', 'smartimg'), $meta['file'], esc_html__('Unknown error, resizing function returned the same filename', 'smartimg')),
 					);
 				}
-			} elseif ( false === $resizeresult ) {
+			} elseif (false === $resizeresult) {
 				$results = array(
 					'success' => false,
 					'id'      => $id,
 					/* translators: 1: File-name of the image 2: the error message, translated elsewhere */
-					'message' => sprintf( esc_html__( 'ERROR: %1$s (%2$s)', 'smartimg' ), $meta['file'], esc_html__( 'wp_get_image_editor missing', 'smartimg' ) ),
+					'message' => sprintf(esc_html__('ERROR: %1$s (%2$s)', 'smartimg'), $meta['file'], esc_html__('wp_get_image_editor missing', 'smartimg')),
 				);
 			} else {
 				$results = array(
 					'success' => false,
 					'id'      => $id,
 					/* translators: 1: File-name of the image 2: the error message, translated elsewhere */
-					'message' => sprintf( esc_html__( 'ERROR: %1$s (%2$s)', 'smartimg' ), $meta['file'], htmlentities( $resizeresult->get_error_message() ) ),
+					'message' => sprintf(esc_html__('ERROR: %1$s (%2$s)', 'smartimg'), $meta['file'], htmlentities($resizeresult->get_error_message())),
 				);
 			}
 		} else {
@@ -329,37 +345,37 @@ function smartimg_resize_from_id( $id = 0 ) {
 				'success' => true,
 				'id'      => $id,
 				/* translators: %s: File-name of the image */
-				'message' => sprintf( esc_html__( 'SKIPPED: %s (Resize not required)', 'smartimg' ), $meta['file'] ) . " -- $oldw x $oldh",
+				'message' => sprintf(esc_html__('SKIPPED: %s (Resize not required)', 'smartimg'), $meta['file']) . " -- $oldw x $oldh",
 			);
-			if ( empty( $meta['width'] ) || empty( $meta['height'] ) ) {
-				if ( empty( $meta['width'] ) || $meta['width'] > $oldw ) {
+			if (empty($meta['width']) || empty($meta['height'])) {
+				if (empty($meta['width']) || $meta['width'] > $oldw) {
 					$meta['width'] = $oldw;
 				}
-				if ( empty( $meta['height'] ) || $meta['height'] > $oldh ) {
+				if (empty($meta['height']) || $meta['height'] > $oldh) {
 					$meta['height'] = $oldh;
 				}
 				$update_meta = true;
 			}
 		}
-		$remove_original = smartimg_remove_original_image( $id, $meta );
-		if ( $remove_original && is_array( $remove_original ) ) {
+		$remove_original = smartimg_remove_original_image($id, $meta);
+		if ($remove_original && is_array($remove_original)) {
 			$meta        = $remove_original;
 			$update_meta = true;
 		}
-		if ( ! empty( $update_meta ) ) {
-			wp_update_attachment_metadata( $id, $meta );
+		if (!empty($update_meta)) {
+			wp_update_attachment_metadata($id, $meta);
 		}
 	} else {
 		$results = array(
 			'success' => false,
 			'id'      => $id,
 			/* translators: %s: ID number of the image */
-			'message' => sprintf( esc_html__( 'ERROR: Attachment with ID of %d not found', 'smartimg' ), intval( $id ) ),
+			'message' => sprintf(esc_html__('ERROR: Attachment with ID of %d not found', 'smartimg'), intval($id)),
 		);
 	}
 
 	// If there is a quota we need to reset the directory size cache so it will re-calculate.
-	delete_transient( 'dirsize_cache' );
+	delete_transient('dirsize_cache');
 
 	return $results;
 }
@@ -371,30 +387,30 @@ function smartimg_resize_from_id( $id = 0 ) {
  * @param array $meta The attachment metadata. Optional, default to null.
  * @return bool True on success, false on failure.
  */
-function smartimg_remove_original_image( $id, $meta = null ) {
+function smartimg_remove_original_image($id, $meta = null) {
 	$id = (int) $id;
-	if ( empty( $id ) ) {
+	if (empty($id)) {
 		return false;
 	}
-	if ( is_null( $meta ) ) {
-		$meta = wp_get_attachment_metadata( $id );
+	if (is_null($meta)) {
+		$meta = wp_get_attachment_metadata($id);
 	}
 
 	if (
-		$meta && is_array( $meta ) &&
-		smartimg_get_option( 'smartimg_delete_originals', false ) &&
-		! empty( $meta['original_image'] ) && function_exists( 'wp_get_original_image_path' )
+		$meta && is_array($meta) &&
+		smartimg_get_option('smartimg_delete_originals', false) &&
+		!empty($meta['original_image']) && function_exists('wp_get_original_image_path')
 	) {
-		$original_image = wp_get_original_image_path( $id );
-		if ( empty( $original_image ) || ! is_file( $original_image ) ) {
-			$original_image = wp_get_original_image_path( $id, true );
+		$original_image = wp_get_original_image_path($id);
+		if (empty($original_image) || !is_file($original_image)) {
+			$original_image = wp_get_original_image_path($id, true);
 		}
-		if ( ! empty( $original_image ) && is_file( $original_image ) && is_writable( $original_image ) ) {
-			unlink( $original_image );
+		if (!empty($original_image) && is_file($original_image) && is_writable($original_image)) {
+			unlink($original_image);
 		}
 		clearstatcache();
-		if ( empty( $original_image ) || ! is_file( $original_image ) ) {
-			unset( $meta['original_image'] );
+		if (empty($original_image) || !is_file($original_image)) {
+			unset($meta['original_image']);
 			return $meta;
 		}
 	}
@@ -413,46 +429,46 @@ function smartimg_remove_original_image( $id, $meta = null ) {
  * @param int    $jpeg_quality Optional, default is 82. Image quality level (1-100).
  * @return mixed WP_Error on failure. String with new destination path.
  */
-function smartimg_image_resize( $file, $max_w, $max_h, $crop = false, $suffix = null, $dest_path = null, $jpeg_quality = 82 ) {
-	if ( function_exists( 'wp_get_image_editor' ) ) {
-		$editor = wp_get_image_editor( $file );
-		if ( is_wp_error( $editor ) ) {
+function smartimg_image_resize($file, $max_w, $max_h, $crop = false, $suffix = null, $dest_path = null, $jpeg_quality = 82) {
+	if (function_exists('wp_get_image_editor')) {
+		$editor = wp_get_image_editor($file);
+		if (is_wp_error($editor)) {
 			return $editor;
 		}
-		$editor->set_quality( min( 92, $jpeg_quality ) );
+		$editor->set_quality(min(92, $jpeg_quality));
 
-		$ftype = smartimg_quick_mimetype( $file );
+		$ftype = smartimg_quick_mimetype($file);
 
 		// Return 1 to override auto-rotate.
-		$orientation = (int) apply_filters( 'smartimg_orientation', smartimg_get_orientation( $file, $ftype ) );
+		$orientation = (int) apply_filters('smartimg_orientation', smartimg_get_orientation($file, $ftype));
 		// Try to correct for auto-rotation if the info is available.
-		switch ( $orientation ) {
-			case 3:
-				$editor->rotate( 180 );
-				break;
-			case 6:
-				$editor->rotate( -90 );
-				break;
-			case 8:
-				$editor->rotate( 90 );
-				break;
+		switch ($orientation) {
+		case 3:
+			$editor->rotate(180);
+			break;
+		case 6:
+			$editor->rotate(-90);
+			break;
+		case 8:
+			$editor->rotate(90);
+			break;
 		}
 
-		$resized = $editor->resize( $max_w, $max_h, $crop );
-		if ( is_wp_error( $resized ) ) {
+		$resized = $editor->resize($max_w, $max_h, $crop);
+		if (is_wp_error($resized)) {
 			return $resized;
 		}
 
-		$dest_file = $editor->generate_filename( $suffix, $dest_path );
+		$dest_file = $editor->generate_filename($suffix, $dest_path);
 
 		// Make sure that the destination file does not exist.
-		if ( file_exists( $dest_file ) ) {
-			$dest_file = $editor->generate_filename( 'TMP', $dest_path );
+		if (file_exists($dest_file)) {
+			$dest_file = $editor->generate_filename('TMP', $dest_path);
 		}
 
-		$saved = $editor->save( $dest_file );
+		$saved = $editor->save($dest_file);
 
-		if ( is_wp_error( $saved ) ) {
+		if (is_wp_error($saved)) {
 			return $saved;
 		}
 
